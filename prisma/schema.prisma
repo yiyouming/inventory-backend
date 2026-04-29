@@ -1,0 +1,148 @@
+// 数据库模型设计
+// 支持 PostgreSQL (Supabase) 和 SQLite (本地开发)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  nickname  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products       Product[]
+  categories     Category[]
+  purchaseOrders PurchaseOrder[]
+  salesOrders    SalesOrder[]
+  suppliers      Supplier[]
+  customers      Customer[]
+}
+
+// 商品分类表
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+}
+
+// 商品表
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  barcode     String?
+  unit        String   @default("个")
+  costPrice   Decimal  @db.Decimal(10, 2)
+  salePrice   Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  minStock    Int      @default(0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  purchaseItems PurchaseItem[]
+  salesItems    SalesItem[]
+}
+
+// 供应商表
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  contact   String?
+  phone     String?
+  address   String?
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId         Int
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchaseOrders PurchaseOrder[]
+}
+
+// 客户表
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  contact   String?
+  phone     String?
+  address   String?
+  remark    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId      Int
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  salesOrders SalesOrder[]
+}
+
+// 进货单表
+model PurchaseOrder {
+  id          Int      @id @default(autoincrement())
+  orderNo     String   @unique
+  totalAmount Decimal  @db.Decimal(12, 2)
+  remark      String?
+  status      String   @default("completed")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId     Int
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  supplierId Int
+  supplier   Supplier       @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  items      PurchaseItem[]
+}
+
+// 进货明细表
+model PurchaseItem {
+  id              Int      @id @default(autoincrement())
+  quantity        Int
+  unitPrice       Decimal @db.Decimal(10, 2)
+  subtotal        Decimal @db.Decimal(12, 2)
+  createdAt       DateTime @default(now())
+  purchaseOrderId Int
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       Int
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// 销售单表
+model SalesOrder {
+  id          Int      @id @default(autoincrement())
+  orderNo     String   @unique
+  totalAmount Decimal  @db.Decimal(12, 2)
+  remark      String?
+  status      String   @default("completed")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId Int
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items      SalesItem[]
+}
+
+// 销售明细表
+model SalesItem {
+  id          Int      @id @default(autoincrement())
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  subtotal    Decimal @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  salesOrderId Int
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId    Int
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
